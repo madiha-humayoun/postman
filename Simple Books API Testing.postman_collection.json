@@ -1,0 +1,136 @@
+{
+	"info": {
+		"_postman_id": "dc2f4f7c-9dc9-4027-ac1e-db8f2709f283",
+		"name": "Simple Books API Testing",
+		"description": "Updated collection for testing Simple Books API with modified order request and assertions",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "44460108",
+		"_collection_link": "https://madiha-8450883.postman.co/workspace/64d677ea-cc6b-4fcb-8556-9d90cf1c9785/collection/44460108-dc2f4f7c-9dc9-4027-ac1e-db8f2709f283?action=share&source=collection_link&creator=44460108"
+	},
+	"item": [
+		{
+			"name": "Register Client (Get Token)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Parse the response",
+							"const response = pm.response.json();",
+							"",
+							"// Set accessToken in the environment",
+							"pm.environment.set(\"accessToken\", response.accessToken);",
+							"console.log(\"Access token saved:\", response.accessToken);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"clientName\": \"TestClient\",\n  \"clientEmail\": \"test@example.com\"\n}"
+				},
+				"url": "{{baseUrl}}/api-clients",
+				"description": "Register a client to get an access token"
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Order",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Log accessToken for debugging",
+							"console.log(\"Using accessToken:\", pm.environment.get(\"accessToken\"));",
+							"",
+							"// Generate random bookId (between 1 and 6)",
+							"const randomBookId = Math.floor(Math.random() * 6) + 1;",
+							"",
+							"// Set randomBookId as an environment variable",
+							"pm.environment.set(\"randomBookId\", randomBookId);",
+							"",
+							"// Define customerName with a new format (e.g., QA_Tester_ followed by timestamp)",
+							"const customerName = \"QA_Tester_\" + Date.now().toString().slice(-6);",
+							"pm.environment.set(\"customerName\", customerName);",
+							"",
+							"console.log(\"Generated bookId:\", randomBookId);",
+							"console.log(\"Generated customerName:\", customerName);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Log the response to the console",
+							"console.log(\"Response Status:\", pm.response.code);",
+							"console.log(\"Response Body:\", pm.response.json());",
+							"",
+							"// Parse the response",
+							"const response = pm.response.json();",
+							"",
+							"// Test Suite: Valid Assertions",
+							"pm.test(\"Status code should be 201 Created\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response should have created: true\", function () {",
+							"    pm.expect(response.created).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Response should contain a valid orderId\", function () {",
+							"    pm.expect(response.orderId).to.be.a(\"string\").and.not.empty;",
+							"});",
+							"",
+							"pm.test(\"Response time should be under 2000ms\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+							"});",
+							"",
+							"// Intentional Failing Test",
+							"pm.test(\"OrderId should be 'xyz' (This will fail)\", function () {",
+							"    pm.expect(response.orderId).to.equal(\"xyz\"); // Fails because orderId is a UUID",
+							"});",
+							"",
+							"// Clear the customerName environment variable",
+							"pm.environment.unset(\"customerName\");",
+							"console.log(\"Cleared customerName variable\");"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"description": "API token from /api-clients"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"bookId\": {{randomBookId}},\n  \"customerName\": \"{{customerName}}\"\n}"
+				},
+				"url": "{{baseUrl}}/orders",
+				"description": "Submit an order to the Simple Books API with updated customerName format"
+			},
+			"response": []
+		}
+	]
+}
